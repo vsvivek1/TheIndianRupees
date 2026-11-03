@@ -30,3 +30,4 @@ jobs:
         run: |
           python generator.py
           python publisher.py
+          #test
