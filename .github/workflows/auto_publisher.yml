@@ -5,6 +5,9 @@ on:
     - cron: '0 2 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write # Allows pushing generated slides back to repo for public raw URLs
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -27,7 +30,7 @@ jobs:
           META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
           FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           python generator.py
           python publisher.py
-          #test
