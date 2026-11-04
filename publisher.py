@@ -3,14 +3,13 @@ import subprocess
 import sys
 import time
 import requests
-from generator import create_carousel_slides
+from generator import create_carousel_slides, todays_caption
 
 ACCESS_TOKEN = os.getenv("META_ACCESS_TOKEN")
 FB_PAGE_ID = os.getenv("FB_PAGE_ID")
 IG_USER_ID = os.getenv("IG_USER_ID")
 REPO_NAME = os.getenv("GITHUB_REPOSITORY") # e.g. "vsvivek1/TheIndianRupees"
 
-CAPTION = "Master your wealth and build absolute financial freedom. 🇮🇳💼 #TheIndianRupees #PersonalFinance #WealthBuilding #InvestingIndia"
 
 def commit_and_get_urls(slides):
     # Configure git inside GitHub Actions runner
@@ -18,7 +17,7 @@ def commit_and_get_urls(slides):
     subprocess.run(["git", "config", "--global", "user.email", "github-actions[bot]@users.noreply.github.com"])
     
     # Add generated slides and commit them to main branch
-    subprocess.run(["git", "add"] + slides)
+    subprocess.run(["git", "add", "-A", "slides"])
     subprocess.run(["git", "commit", "-m", "Auto-generate daily carousel slides [skip ci]"])
     
     # Push back to repository
@@ -26,11 +25,12 @@ def commit_and_get_urls(slides):
     if push_res.returncode != 0:
         print("Git push failed or nothing to commit.")
     
-    # Generate official GitHub raw URLs for public Meta access
+    # Use the commit SHA, not "main", so Instagram never gets a cached copy
+    # of yesterday's slides from GitHub's CDN
+    sha = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
     public_urls = []
     for slide in slides:
-        # GitHub raw URL format: https://raw.githubusercontent.com/USER/REPO/main/path/to/image.png
-        raw_url = f"https://raw.githubusercontent.com/{REPO_NAME}/main/{slide}"
+        raw_url = f"https://raw.githubusercontent.com/{REPO_NAME}/{sha}/{slide}"
         public_urls.append(raw_url)
         print(f"Public Raw URL: {raw_url}")
         
@@ -95,7 +95,7 @@ def publish_carousel():
     carousel_payload = {
         "media_type": "CAROUSEL",
         "children": ",".join(item_ids),
-        "caption": CAPTION,
+        "caption": todays_caption(),
         "access_token": ACCESS_TOKEN
     }
     carousel_res = requests.post(carousel_url, data=carousel_payload).json()
