@@ -182,6 +182,9 @@ def photo_background(topic_key, slide_kind):
     if not os.path.exists(path):
         return None
     photo = Image.open(path).convert("RGB")
+    # Cut off the bottom strip where the free generator stamps its logo
+    pw, ph = photo.size
+    photo = photo.crop((0, 0, pw, int(ph * 0.93)))
     # Crop to 4:5 and scale to the canvas
     pw, ph = photo.size
     target = W / H
