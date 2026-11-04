@@ -1,6 +1,19 @@
 import os
 from PIL import Image, ImageDraw, ImageFont
 
+FONT_PATHS = [
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+]
+
+
+def load_font(size):
+    for path in FONT_PATHS:
+        if os.path.exists(path):
+            return ImageFont.truetype(path, size)
+    return ImageFont.load_default(size=size)
+
+
 def create_carousel_slides():
     os.makedirs("slides", exist_ok=True)
     
@@ -22,10 +35,11 @@ def create_carousel_slides():
         # Draw luxury border frame
         draw.rectangle([80, 80, width - 80, height - 80], outline="#D4AF37", width=6)
         
-        # Text positioning
-        draw.text((160, 400), title, fill="#D4AF37")
-        draw.text((160, 600), subtitle, fill="#FFFFFF")
-        draw.text((160, 2400), page, fill="#8D99AE")
+        # Text positioning (sizes are for the 2x canvas; without a font size
+        # Pillow draws a tiny ~10px bitmap font)
+        draw.text((160, 400), title, fill="#D4AF37", font=load_font(150))
+        draw.text((160, 650), subtitle, fill="#FFFFFF", font=load_font(90))
+        draw.text((160, 2400), page, fill="#8D99AE", font=load_font(70))
         
         filename = f"slides/slide_{i}.png"
         img_final = img.resize((1080, 1350), Image.Resampling.LANCZOS)
