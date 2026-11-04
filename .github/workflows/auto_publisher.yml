@@ -32,5 +32,4 @@ jobs:
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          python generator.py
           python publisher.py
