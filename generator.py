@@ -25,6 +25,7 @@ HASHTAGS = "#TheIndianRupees #PersonalFinance #MoneyTips #InvestingIndia #Financ
 # Slide kinds: cover, point, stat, cta
 TOPICS = [
     {
+        "key": "compounding",
         "caption": "Time is the most powerful ingredient in investing. Start small, start today.",
         "slides": [
             {"kind": "cover", "kicker": "WEALTH BASICS", "title": "The Power of Compounding",
@@ -40,6 +41,7 @@ TOPICS = [
         ],
     },
     {
+        "key": "emergency",
         "caption": "Before you invest, protect yourself. An emergency fund keeps one bad month from becoming a bad year.",
         "slides": [
             {"kind": "cover", "kicker": "MONEY SAFETY", "title": "Build Your Emergency Fund",
@@ -55,6 +57,7 @@ TOPICS = [
         ],
     },
     {
+        "key": "budget",
         "caption": "A simple budget that actually works. Pay yourself first.",
         "slides": [
             {"kind": "cover", "kicker": "BUDGETING", "title": "The 50 / 30 / 20 Rule",
@@ -168,8 +171,40 @@ def draw_frame(draw, index, total, kind):
         draw.text((W - m - draw.textlength(handle, font=ffont), y), handle, font=ffont, fill=GOLD)
 
 
-def render_slide(slide, index, total):
-    img = background()
+BG_DIR = os.path.join(HERE, "backgrounds")
+
+
+def photo_background(topic_key, slide_kind):
+    """Use an AI-made photo from backgrounds/ if one exists, darkened so the
+    text stays readable. Returns None when there is no photo."""
+    n = {"cover": 1, "cta": 3}.get(slide_kind, 2)
+    path = os.path.join(BG_DIR, f"{topic_key}_{n}.jpg")
+    if not os.path.exists(path):
+        return None
+    photo = Image.open(path).convert("RGB")
+    # Crop to 4:5 and scale to the canvas
+    pw, ph = photo.size
+    target = W / H
+    if pw / ph > target:
+        nw = int(ph * target)
+        photo = photo.crop(((pw - nw) // 2, 0, (pw - nw) // 2 + nw, ph))
+    else:
+        nh = int(pw / target)
+        photo = photo.crop((0, (ph - nh) // 2, pw, (ph - nh) // 2 + nh))
+    photo = photo.resize((W, H), Image.Resampling.LANCZOS)
+
+    # Navy overlay: strong at the top where the text is, lighter at the bottom.
+    # Cover slides show more of the photo.
+    top, bottom = (205, 90) if slide_kind == "cover" else (228, 150)
+    mask = Image.new("L", (1, H))
+    for y in range(H):
+        mask.putpixel((0, y), int(top + (bottom - top) * y / H))
+    mask = mask.resize((W, H))
+    return Image.composite(Image.new("RGB", (W, H), NAVY_TOP), photo, mask)
+
+
+def render_slide(slide, index, total, topic_key=None):
+    img = (topic_key and photo_background(topic_key, slide["kind"])) or background()
     draw = ImageDraw.Draw(img)
     draw_frame(draw, index, total, slide["kind"])
     m = MARGIN
@@ -231,7 +266,7 @@ def create_carousel_slides(day=None):
     filenames = []
     for i, slide in enumerate(slides, start=1):
         filename = f"slides/slide_{i}.png"
-        render_slide(slide, i, len(slides)).save(filename, "PNG", optimize=True)
+        render_slide(slide, i, len(slides), topic.get("key")).save(filename, "PNG", optimize=True)
         filenames.append(filename)
 
     print(f"Generated {len(filenames)} slides: {slides[0]['title']}")
